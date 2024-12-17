@@ -349,7 +349,7 @@ export function setupRoutes(app: Express, ddbApi: DynamoApiController): void {
             uniqueKeys,
         };
 
-        res.json(data);
+        res.json(convertBigIntToString(data));
     }));
 
     app.get('/tables/:TableName/meta', asyncMiddleware(async(req, res) => {
@@ -447,4 +447,23 @@ export function setupRoutes(app: Express, ddbApi: DynamoApiController): void {
         console.info(error.stack);
         res.status(500).json({ message: error.message });
     }) as ErrorRequestHandler);
+}
+
+// Convert BigInt values to strings before JSON serialization
+function convertBigIntToString(obj: unknown): unknown {
+    if (obj === null || obj === undefined) {
+        return obj;
+    }
+    if (typeof obj === 'bigint') {
+        return obj.toString();
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(convertBigIntToString);
+    }
+    if (typeof obj === 'object') {
+        return Object.fromEntries(
+            Object.entries(obj).map(([key, value]) => [key, convertBigIntToString(value)])
+        );
+    }
+    return obj;
 }
